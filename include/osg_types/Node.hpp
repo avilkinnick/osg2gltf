@@ -1,12 +1,13 @@
 #pragma once
 
+#include <optional>
+
 namespace osg_types
 {
 
 struct Node
 {
-protected:
-    unsigned int id;
+    std::optional<unsigned int> unique_id;
 };
 
 }
