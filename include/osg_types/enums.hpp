@@ -22,7 +22,13 @@ enum class Blend_func_enum
     SRC_ALPHA_SATURATE
 };
 
-enum Color_mode
+enum class Color_control
+{
+    SINGLE_COLOR,
+    SEPARATE_SPECULAR_COLOR
+};
+
+enum class Color_mode
 {
     AMBIENT,
     DIFFUSE,
@@ -39,11 +45,30 @@ enum class Data_variance
     UNSPECIFIED
 };
 
-enum class Face_type
+enum class Depth_function
+{
+    NEVER,
+    LESS,
+    EQUAL,
+    LEQUAL,
+    GREATER,
+    NOTEQUAL,
+    GEQUAL,
+    ALWAYS
+};
+
+enum class Face_enum
 {
     FRONT,
     BACK,
     FRONT_AND_BACK
+};
+
+enum class Polygon_mode
+{
+    POINT,
+    LINE,
+    FILL
 };
 
 enum class Render_bin_mode
