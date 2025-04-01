@@ -5,7 +5,7 @@
 namespace osg_types
 {
 
-struct State_set : public Node
+struct Texture2d : public Node
 {
 };
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Data_variance.hpp"
 #include "Node.hpp"
 
 #include <string>
@@ -8,11 +7,10 @@
 namespace osg_types
 {
 
-struct Group : public Node
+struct Geometry : public Node
 {
 protected:
     std::string name;
-    Data_variance data_variance;
 };
 
 }

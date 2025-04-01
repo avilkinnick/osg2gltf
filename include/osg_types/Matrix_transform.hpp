@@ -1,6 +1,6 @@
 #pragma once
 
-#include "osg_types/Group.hpp"
+#include "Group.hpp"
 
 namespace osg_types
 {

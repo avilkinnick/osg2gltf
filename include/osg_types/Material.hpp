@@ -5,7 +5,7 @@
 namespace osg_types
 {
 
-struct State_set : public Node
+struct Material : public Node
 {
 };
 
