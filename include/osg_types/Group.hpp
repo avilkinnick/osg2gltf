@@ -18,7 +18,7 @@ struct Group : public Node
     Data_variance data_variance = Data_variance::UNSPECIFIED;
     std::shared_ptr<State_set> state_set = nullptr;
     std::string description = "";
-    std::vector<Node> children = {};
+    std::vector<std::shared_ptr<Node>> children = {};
 };
 
 }
