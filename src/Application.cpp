@@ -1,19 +1,10 @@
 #include "Application.hpp"
 
-#include "osg_types/Group.hpp"
-#include "osg_types/Node.hpp"
-
 #include <fstream>
-#include <map>
-#include <memory>
-#include <stack>
 #include <stdexcept>
 #include <string>
 
 using std::string_literals::operator""s;
-
-Application::Application() = default;
-Application::~Application() = default;
 
 void Application::read_arguments(int argc, char* argv[])
 {
@@ -37,19 +28,4 @@ void Application::open_input_file()
 
 void Application::read_data_from_input_file()
 {
-    std::map<unsigned int, std::shared_ptr<osg_types::Node>> node_map;
-    std::stack<std::shared_ptr<osg_types::Node>> node_stack;
-
-    root = std::make_shared<osg_types::Group>();
-    node_stack.emplace(root);
-
-    std::string buffer;
-    while (input_file >> buffer)
-    {
-        if (buffer == "osg::Group")
-        {
-            auto group = std::make_shared<osg_types::Group>();
-
-        }
-    }
 }
