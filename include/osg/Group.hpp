@@ -1,0 +1,18 @@
+#pragma once
+
+#include "Object.hpp"
+#include "State_set.hpp"
+
+#include <memory>
+#include <vector>
+
+namespace osg
+{
+
+struct Group : public Object
+{
+    std::shared_ptr<State_set> state_set;
+    std::vector<Object> children;
+};
+
+}
