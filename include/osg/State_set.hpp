@@ -5,7 +5,7 @@
 namespace osg
 {
 
-struct State_set : public Object
+struct State_set final : public Object
 {
     bool blend = false;
 };

@@ -5,7 +5,7 @@
 namespace osg
 {
 
-struct Image : public Object
+struct Image final : public Object
 {
 };
 

@@ -5,7 +5,7 @@
 namespace osg
 {
 
-struct Geometry : public Object
+struct Geometry final : public Object
 {
 };
 

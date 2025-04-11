@@ -1,6 +1,11 @@
 #include "Application.hpp"
 
+#include "osg/Group.hpp"
+#include "osg/Object.hpp"
+
 #include <fstream>
+#include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
@@ -28,4 +33,39 @@ void Application::open_input_file()
 
 void Application::read_data_from_input_file()
 {
+    unsigned int depth = 1;
+    std::map<unsigned int, std::shared_ptr<osg::Object>> depth_map;
+    std::map<unsigned int, std::shared_ptr<osg::Object>> id_map;
+
+    root = std::make_shared<osg::Group>();
+    depth_map[0] = root;
+
+    std::string buffer;
+    while (input_file >> buffer)
+    {
+        if (buffer == "osg::Group")
+        {
+            auto group = std::make_shared<osg::Group>();
+            auto parent = depth_map[depth - 1];
+            if (auto parent_group = dynamic_cast<osg::Group*>(parent.get()))
+            {
+            }
+        }
+        else if (buffer == "{")
+        {
+            ++depth;
+        }
+        else if (buffer == "}")
+        {
+            --depth;
+        }
+        else if (buffer == "UniqueUD")
+        {
+            input_file >> buffer;
+        }
+        else if (buffer == "Name")
+        {
+
+        }
+    }
 }

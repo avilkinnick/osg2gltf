@@ -5,7 +5,7 @@
 namespace osg
 {
 
-struct Geode : public Group
+struct Geode final : public Group 
 {
 };
 

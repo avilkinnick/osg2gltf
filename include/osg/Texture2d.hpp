@@ -5,7 +5,7 @@
 namespace osg
 {
 
-struct Texture2d : public Object
+struct Texture2d final : public Object
 {
 };
 
