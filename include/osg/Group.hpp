@@ -14,7 +14,7 @@ struct Group : public Object
     virtual ~Group() = default;
 
     std::shared_ptr<State_set> state_set;
-    std::vector<Object> children;
+    std::vector<std::shared_ptr<osg::Object>> children;
 };
 
 }
