@@ -369,3 +369,11 @@ void Application::read_data_from_input_file()
 
     root->print();
 }
+
+void Application::convert_data()
+{
+}
+
+void Application::write_data_to_output_files()
+{
+}

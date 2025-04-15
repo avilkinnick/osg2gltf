@@ -12,6 +12,8 @@ int main(int argc, char* argv[])
         application.read_arguments(argc, argv);
         application.open_input_file();
         application.read_data_from_input_file();
+        application.convert_data();
+        application.write_data_to_output_files();
     }
     catch (const std::exception& exception)
     {

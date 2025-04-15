@@ -1,0 +1,2 @@
+#!/bin/bash
+./build/osg2gltf ./models/VL60k-1737.osgt ./models/VL60k-1737 > res.txt
