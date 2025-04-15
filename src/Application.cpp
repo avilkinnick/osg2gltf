@@ -234,6 +234,106 @@ void Application::read_data_from_input_file()
                     throw std::runtime_error("GL_BLEND not inside osg::StateSet");
                 }
             }
+            else if (buffer == "VertexData")
+            {
+                if (auto geometry = std::dynamic_pointer_cast<osg::Geometry>(depth_map[depth - 1]))
+                {
+                    while (buffer != "Vec3fArray")
+                    {
+                        input_file >> buffer;
+                    }
+
+                    std::size_t vertex_count;
+                    input_file >> vertex_count >> buffer;
+                    geometry->vertices.resize(vertex_count);
+
+                    for (auto& vertex : geometry->vertices)
+                    {
+                        input_file >> vertex.x >> vertex.y >> vertex.z;
+                    }
+
+                    input_file >> buffer;
+
+                    do
+                    {
+                        input_file >> buffer;
+                    }
+                    while (buffer != "}");
+                }
+            }
+            else if (buffer == "NormalData")
+            {
+                if (auto geometry = std::dynamic_pointer_cast<osg::Geometry>(depth_map[depth - 1]))
+                {
+                    while (buffer != "Vec3fArray")
+                    {
+                        input_file >> buffer;
+                    }
+
+                    std::size_t normal_count;
+                    input_file >> normal_count >> buffer;
+                    geometry->normals.resize(normal_count);
+
+                    for (auto& normal : geometry->normals)
+                    {
+                        input_file >> normal.x >> normal.y >> normal.z;
+                    }
+
+                    input_file >> buffer;
+
+                    do
+                    {
+                        input_file >> buffer;
+                    }
+                    while (buffer != "}");
+                }
+            }
+            else if (buffer == "TexCoordData")
+            {
+                if (auto geometry = std::dynamic_pointer_cast<osg::Geometry>(depth_map[depth - 1]))
+                {
+                    while (buffer != "Vec2fArray")
+                    {
+                        input_file >> buffer;
+                    }
+
+                    std::size_t texcoord_count;
+                    input_file >> texcoord_count >> buffer;
+                    geometry->texcoords.resize(texcoord_count);
+
+                    for (auto& texcoord : geometry->texcoords)
+                    {
+                        input_file >> texcoord.x >> texcoord.y;
+                    }
+
+                    input_file >> buffer;
+
+                    do
+                    {
+                        input_file >> buffer;
+                    }
+                    while (buffer != "}");
+
+                    input_file >> buffer;
+                }
+            }
+            else if (buffer == "Matrix")
+            {
+                if (auto matrix_transform = std::dynamic_pointer_cast<osg::Matrix_transform>(depth_map[depth - 1]))
+                {
+                    input_file >> buffer;
+
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        for (int j = 0; j < 4; ++j)
+                        {
+                            input_file >> matrix_transform->matrix[i][j];
+                        }
+                    }
+
+                    input_file >> buffer;
+                }
+            }
             else if (buffer == "Children")
             {
                 if (auto parent_group = std::dynamic_pointer_cast<osg::Group>(depth_map[depth - 1]))
