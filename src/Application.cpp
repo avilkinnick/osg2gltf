@@ -372,8 +372,99 @@ void Application::read_data_from_input_file()
 
 void Application::convert_data()
 {
+    convert_data(root->children[0]);
 }
 
 void Application::write_data_to_output_files()
 {
+    // std::ofstream bin_file(output_filename + ".bin");
+    
+    // std::string gltf_content;
+    
+    // gltf_content += "{\n"
+    //     "    \"asset\": {\n"
+    //     "        \"version\": \"2.0\"\n"
+    //     "    },\n"
+    //     "    \"scenes\": [\n"
+    //     "        {\n"
+    //     "            \"nodes\": [0]\n"
+    //     "        }\n"
+    //     "    ],\n"
+    //     "    \"scene\": 0,\n"
+    //     "    \"nodes\": [\n";
+    // write_node(gltf_content, root->children[0]);
+    // gltf_content.pop_back();
+    // gltf_content.pop_back();
+    // gltf_content += "\n"
+    //     "    ]\n"
+    //     "}";
+
+    // std::ofstream gltf_file(output_filename + ".gltf");
+    // gltf_file << gltf_content;
+}
+
+// void Application::write_node(std::string& gltf_content, std::shared_ptr<osg::Object> node)
+// {
+//     if (auto group = std::dynamic_pointer_cast<osg::Group>(node))
+//     {
+//         gltf_content += "        {\n"
+//             "            \"name\": \"" + group->name + "\",\n"
+//             "            \"children\": [";
+
+//         for (auto& child : group->children)
+//         {
+//             if (!node_map.count(child->unique_id))
+//             {
+//                 node_map[child->unique_id] = node_map.size() + 1;
+//             }
+
+//             gltf_content += std::to_string(node_map[child->unique_id]) + ", ";
+//         }
+//         gltf_content.pop_back();
+//         gltf_content.pop_back();
+
+//         gltf_content += "]";
+
+//         if (auto matrix_transform = std::dynamic_pointer_cast<osg::Matrix_transform>(group))
+//         {
+//             gltf_content += ",\n"
+//                 "            \"matrix\": [\n";
+//             for (int i = 0; i < 4; ++i)
+//             {
+//                 gltf_content += "                ";
+//                 for (int j = 0; j < 4; ++j)
+//                 {
+//                     gltf_content += std::to_string(matrix_transform->matrix[i][j]);
+//                     if (j < 3)
+//                     {
+//                         gltf_content += ", ";
+//                     }
+//                     else if (i < 3)
+//                     {
+//                         gltf_content += ',';
+//                     }
+//                 }
+//                 gltf_content += '\n';
+//             }
+//             gltf_content += "            ]\n";
+//         }
+//         else
+//         {
+//             gltf_content += '\n';
+//         }
+
+//         gltf_content += "        },\n";
+//         for (auto& child : group->children)
+//         {
+//             write_node(gltf_content, child);
+//         }
+//     }
+// }
+
+void Application::convert_data(std::shared_ptr<osg::Object> object)
+{
+    if (auto group = std::dynamic_pointer_cast<osg::Group>(object))
+    {
+        
+    }
 }

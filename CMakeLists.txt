@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(osg2gltf
+    ${PROJECT_SOURCE_DIR}/include/gltf/Node.hpp
+    ${PROJECT_SOURCE_DIR}/include/gltf/Scene.hpp
     ${PROJECT_SOURCE_DIR}/include/osg/Geode.hpp
     ${PROJECT_SOURCE_DIR}/include/osg/Geometry.hpp
     ${PROJECT_SOURCE_DIR}/include/osg/Group.hpp
