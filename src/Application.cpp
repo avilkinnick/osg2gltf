@@ -1,5 +1,9 @@
 #include "Application.hpp"
 
+#include "gltf/Buffer.hpp"
+#include "gltf/Mesh.hpp"
+#include "gltf/Node.hpp"
+#include "gltf/Scene.hpp"
 #include "osg/Geode.hpp"
 #include "osg/Geometry.hpp"
 #include "osg/Group.hpp"
@@ -17,6 +21,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 using std::string_literals::operator""s;
 
@@ -304,6 +309,7 @@ void Application::read_data_from_input_file()
                     for (auto& texcoord : geometry->texcoords)
                     {
                         input_file >> texcoord.x >> texcoord.y;
+                        texcoord.y = (1.0f - texcoord.y);
                     }
 
                     input_file >> buffer;
@@ -367,104 +373,421 @@ void Application::read_data_from_input_file()
         std::cerr << exception.what() << std::endl;
     }
 
-    root->print();
+    // root->print();
 }
 
 void Application::convert_data()
 {
     convert_data(root->children[0]);
+    int a = 10;
 }
 
 void Application::write_data_to_output_files()
 {
-    // std::ofstream bin_file(output_filename + ".bin");
-    
-    // std::string gltf_content;
-    
-    // gltf_content += "{\n"
-    //     "    \"asset\": {\n"
-    //     "        \"version\": \"2.0\"\n"
-    //     "    },\n"
-    //     "    \"scenes\": [\n"
-    //     "        {\n"
-    //     "            \"nodes\": [0]\n"
-    //     "        }\n"
-    //     "    ],\n"
-    //     "    \"scene\": 0,\n"
-    //     "    \"nodes\": [\n";
-    // write_node(gltf_content, root->children[0]);
-    // gltf_content.pop_back();
-    // gltf_content.pop_back();
-    // gltf_content += "\n"
-    //     "    ]\n"
-    //     "}";
+    std::ofstream bin_file(output_filename + ".bin", std::ios::binary);
+    for (const auto& [osg_id, subbuffer] : buffer.subbuffers)
+    {
+        bin_file.write(reinterpret_cast<const char*>(subbuffer.positions.data()), subbuffer.positions_byte_size);
+        bin_file.write(reinterpret_cast<const char*>(subbuffer.normals.data()), subbuffer.normals_byte_size);
+        bin_file.write(reinterpret_cast<const char*>(subbuffer.texcoords.data()), subbuffer.texcoords_byte_size);
+        bin_file.write(reinterpret_cast<const char*>(subbuffer.indices.data()), subbuffer.indices_byte_size);
+    }
 
-    // std::ofstream gltf_file(output_filename + ".gltf");
-    // gltf_file << gltf_content;
+    std::string gltf_content;
+
+    gltf_content += "{\n"
+        "    \"asset\": {\n"
+        "        \"version\": \"2.0\"\n"
+        "    },\n"
+        "    \"scenes\": [\n"
+        "        {\n"
+        "            \"nodes\": [0]\n"
+        "        }\n"
+        "    ],\n"
+        "    \"scene\": 0,\n"
+        "    \"nodes\": [\n";
+
+    write_node(gltf_content, scene.root_node);
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ],\n"
+        "    \"buffers\": [\n"
+        "        {\n"
+        "            \"byteLength\": " + std::to_string(buffer.size) + ",\n"
+        "            \"uri\": \"" + output_filename + ".bin\"\n" 
+        "        }\n"
+        "    ],\n"
+        "    \"bufferViews\": [\n";
+
+    for (const auto& [osg_id, subbuffer] : buffer.subbuffers)
+    {
+        gltf_content +=
+            "        {\n"
+            "            \"buffer\": 0,\n"
+            "            \"byteLength\": " + std::to_string(subbuffer.indices_offset - subbuffer.positions_offset) + ",\n"
+            "            \"byteOffset\": " + std::to_string(subbuffer.positions_offset) + ",\n"
+            "            \"target\": 34962\n"
+            "        },\n"
+            "        {\n"
+            "            \"buffer\": 0,\n"
+            "            \"byteLength\": " + std::to_string(subbuffer.indices_byte_size) + ",\n"
+            "            \"byteOffset\": " + std::to_string(subbuffer.indices_offset) + ",\n"
+            "            \"target\": 34963\n"
+            "        },\n";
+    }
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ],\n"
+        "    \"accessors\": [\n";
+
+    int i = 0;
+    for (const auto& [osg_id, subbuffer] : buffer.subbuffers)
+    {
+        osg::Vec3f min = subbuffer.positions[0];
+        osg::Vec3f max = subbuffer.positions[0];
+
+        for (const auto& pos : subbuffer.positions)
+        {
+            if (pos.x < min.x) min.x = pos.x;
+            if (pos.y < min.y) min.y = pos.y;
+            if (pos.z < min.z) min.z = pos.z;
+            if (pos.x > max.x) max.x = pos.x;
+            if (pos.y > max.y) max.y = pos.y;
+            if (pos.z > max.z) max.z = pos.z;
+        }
+
+        gltf_content +=
+            "        {\n"
+            "            \"bufferView\": " + std::to_string(i) + ",\n"
+            "            \"byteOffset\": 0,\n"
+            "            \"componentType\": 5126,\n"
+            "            \"count\": " + std::to_string(subbuffer.positions.size()) + ",\n"
+            "            \"min\": [" + std::to_string(min.x) + ", " + std::to_string(min.y) + ", " + std::to_string(min.z) + "],\n"
+            "            \"max\": [" + std::to_string(max.x) + ", " + std::to_string(max.y) + ", " + std::to_string(max.z) + "],\n"
+            "            \"type\": \"VEC3\"\n"
+            "        },\n"
+            "        {\n"
+            "            \"bufferView\": " + std::to_string(i) + ",\n"
+            "            \"byteOffset\": " + std::to_string(subbuffer.normals_offset - subbuffer.positions_offset) + ",\n"
+            "            \"componentType\": 5126,\n"
+            "            \"count\": " + std::to_string(subbuffer.normals.size()) + ",\n"
+            "            \"type\": \"VEC3\"\n"
+            "        },\n"
+            "        {\n"
+            "            \"bufferView\": " + std::to_string(i) + ",\n"
+            "            \"byteOffset\": " + std::to_string(subbuffer.texcoords_offset - subbuffer.positions_offset) + ",\n"
+            "            \"componentType\": 5126,\n"
+            "            \"count\": " + std::to_string(subbuffer.texcoords.size()) + ",\n"
+            "            \"type\": \"VEC2\"\n"
+            "        },\n"
+            "        {\n"
+            "            \"bufferView\": " + std::to_string(i + 1) + ",\n"
+            "            \"byteOffset\": 0,\n"
+            "            \"componentType\": 5125,\n"
+            "            \"count\": " + std::to_string(subbuffer.indices.size()) + ",\n"
+            "            \"type\": \"SCALAR\"\n"
+            "        },\n";
+
+            i += 2;
+    }
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ],\n"
+        "    \"images\": [\n";
+
+    for (const auto& [id, image] : images)
+    {
+        gltf_content +=
+            "        {\n"
+            "            \"uri\": \"" + image.second->filename + "\"\n"
+            "        },\n";
+    }
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ],\n"
+        "    \"samplers\": [\n"
+        "        {\n"
+        "            \"magFilter\": 9729,\n"
+        "            \"minFilter\": 9987,\n"
+        "            \"wrapS\": 10497,\n"
+        "            \"wrapT\": 10497\n"
+        "        }\n"
+        "    ],\n"
+        "    \"textures\": [\n";
+
+    for (const auto& [id, texture] : textures)
+    {
+        gltf_content +=
+            "        {\n"
+            "            \"sampler\": 0,\n"
+            "            \"source\": " + std::to_string(images[texture.second->image->unique_id].first) + "\n"
+            "        },\n";
+    }
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ],\n"
+        "    \"materials\": [\n";
+
+    for (const auto& [id, material] : materials)
+    {
+        gltf_content +=
+            "        {\n"
+            "            \"name\": \"" + material.second->name + "\",\n"
+            "            \"pbrMetallicRoughness\": {\n"
+            "                \"baseColorTexture\": {\n"
+            "                    \"index\": " + std::to_string(textures[material.second->texture->unique_id].first) + ",\n"
+            "                    \"texCoord\": 0\n"
+            "                }\n"
+            "            },\n"
+            "            \"alphaMode\": \"" + (material.second->blend ? "OPAQUE" : "BLEND") + "\"\n"
+            "        },\n";
+    }
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ],\n"
+        "    \"meshes\": [\n";
+    
+    for (const auto& [id, mesh] : meshes)
+    {
+        gltf_content +=
+            "        {\n"
+            "            \"name\": \"" + mesh.second->name + "\",\n"
+            "            \"primitives\": [\n"
+            "                {\n"
+            "                    \"attributes\": {\n"
+            "                        \"POSITION\": " + std::to_string(mesh.first * 4) + ",\n"
+            "                        \"NORMAL\": " + std::to_string(mesh.first * 4 + 1) + ",\n"
+            "                        \"TEXCOORD_0\": " + std::to_string(mesh.first * 4 + 2) + "\n"
+            "                    },\n"
+            "                    \"indices\": " + std::to_string(mesh.first * 4 + 3) + ",\n"
+            "                    \"material\": " + std::to_string(materials[mesh.second->state_set->unique_id].first) + ",\n"
+            "                    \"mode\": 4\n"
+            "                }\n"
+            "            ]\n"
+            "        },\n";
+    }
+    gltf_content.pop_back();
+    gltf_content.pop_back();
+    gltf_content += '\n';
+
+    gltf_content += "    ]\n"
+        "}";
+
+    std::ofstream gltf_file(output_filename + ".gltf");
+    gltf_file << gltf_content;
 }
 
-// void Application::write_node(std::string& gltf_content, std::shared_ptr<osg::Object> node)
-// {
-//     if (auto group = std::dynamic_pointer_cast<osg::Group>(node))
-//     {
-//         gltf_content += "        {\n"
-//             "            \"name\": \"" + group->name + "\",\n"
-//             "            \"children\": [";
+void Application::write_node(std::string& gltf_content, std::shared_ptr<gltf::Node> node)
+{
+    gltf_content += "        {\n"
+        "            \"name\": \"" + node->name + "\"";
 
-//         for (auto& child : group->children)
-//         {
-//             if (!node_map.count(child->unique_id))
-//             {
-//                 node_map[child->unique_id] = node_map.size() + 1;
-//             }
+    if (!node->children.empty())
+    {
+        gltf_content += ",\n"
+            "            \"children\": [";
 
-//             gltf_content += std::to_string(node_map[child->unique_id]) + ", ";
-//         }
-//         gltf_content.pop_back();
-//         gltf_content.pop_back();
+        for (const auto& [osg_id, child] : node->children)
+        {
+            gltf_content += std::to_string(child.first) + ", ";
+        }
+        gltf_content.pop_back();
+        gltf_content.pop_back();
+        gltf_content += ']';
+    }
 
-//         gltf_content += "]";
+    if (node->mesh.second)
+    {
+        gltf_content += ",\n"
+            "            \"mesh\": " + std::to_string(node->mesh.first);
+    }
 
-//         if (auto matrix_transform = std::dynamic_pointer_cast<osg::Matrix_transform>(group))
-//         {
-//             gltf_content += ",\n"
-//                 "            \"matrix\": [\n";
-//             for (int i = 0; i < 4; ++i)
-//             {
-//                 gltf_content += "                ";
-//                 for (int j = 0; j < 4; ++j)
-//                 {
-//                     gltf_content += std::to_string(matrix_transform->matrix[i][j]);
-//                     if (j < 3)
-//                     {
-//                         gltf_content += ", ";
-//                     }
-//                     else if (i < 3)
-//                     {
-//                         gltf_content += ',';
-//                     }
-//                 }
-//                 gltf_content += '\n';
-//             }
-//             gltf_content += "            ]\n";
-//         }
-//         else
-//         {
-//             gltf_content += '\n';
-//         }
+    if (node->has_matrix)
+    {
+        gltf_content += ",\n"
+            "            \"matrix\": [\n";
 
-//         gltf_content += "        },\n";
-//         for (auto& child : group->children)
-//         {
-//             write_node(gltf_content, child);
-//         }
-//     }
-// }
+        for (int i = 0; i < 4; ++i)
+        {
+            gltf_content += "                ";
+            for (int j = 0; j < 4; ++j)
+            {
+                gltf_content += std::to_string(node->matrix[i][j]);
+                if (j < 3)
+                {
+                    gltf_content += ", ";
+                }
+                else if (i < 3)
+                {
+                    gltf_content += ',';
+                }
+            }
+            gltf_content += '\n';
+        }
+
+        gltf_content += "            ]";
+    }
+
+    gltf_content += "\n"
+        "        },\n";
+
+    for (const auto& [osg_id, child] : node->children)
+    {
+        write_node(gltf_content, child.second);
+    }
+}
 
 void Application::convert_data(std::shared_ptr<osg::Object> object)
 {
+    static unsigned int free_node_id = 0;
+
+    using Unique_osg_id = unsigned int;
+    using Id_node_pair = std::pair<unsigned int, std::shared_ptr<gltf::Node>>;
+
+    static std::map<Unique_osg_id, Id_node_pair> node_map;
+
     if (auto group = std::dynamic_pointer_cast<osg::Group>(object))
     {
+        auto node = std::make_shared<gltf::Node>();
+        node->id = free_node_id;
+        ++free_node_id;
+        node->name = group->name;
+        node_map.insert({group->unique_id, {node->id, node}});
+
+        for (const auto& child : group->children)
+        {
+            convert_data(child);
+            node->children.insert({child->unique_id, node_map[child->unique_id]});
+        }
+
+        if (auto matrix_transform = std::dynamic_pointer_cast<osg::Matrix_transform>(group))
+        {
+            node->has_matrix = true;
+            for (int i = 0; i < 4; ++i)
+            {
+                for (int j = 0; j < 4; ++j)
+                {
+                    node->matrix[i][j] = matrix_transform->matrix[i][j];
+                }
+            }
+        }
+
+        if (node->id == 0)
+        {
+            scene.root_node = node;
+        }
+
+        if (auto state_set = group->state_set)
+        {
+            if (auto texture = state_set->texture)
+            {
+                if (auto image = texture->image)
+                {
+                    if (!images.count(image->unique_id))
+                    {
+                        images.insert({image->unique_id, {images.size(), image}});
+                    }
+                }
+
+                if (!textures.count(texture->unique_id))
+                {
+                    textures.insert({texture->unique_id, {textures.size(), texture}});
+                }
+
+                if (!materials.count(state_set->unique_id))
+                {
+                    materials.insert({state_set->unique_id, {materials.size(), state_set}});
+                }
+            }
+        }
+    }
+    else if (auto geometry = std::dynamic_pointer_cast<osg::Geometry>(object))
+    {
+        auto node = std::make_shared<gltf::Node>();
+        node->id = free_node_id;
+        ++free_node_id;
+        node->name = geometry->name;
+        node_map.insert({geometry->unique_id, {node->id, node}});
+
+        static std::size_t offset = 0;
+
+        gltf::Subbuffer subbuffer;
+
+        subbuffer.positions_offset = offset;
+        subbuffer.positions_byte_size = geometry->vertices.size() * sizeof(osg::Vec3f);
+        subbuffer.positions = geometry->vertices;
+
+        subbuffer.normals_offset = subbuffer.positions_offset + subbuffer.positions_byte_size;
+        subbuffer.normals_byte_size = geometry->normals.size() * sizeof(osg::Vec3f);
+        subbuffer.normals = geometry->normals;
+
+        subbuffer.texcoords_offset = subbuffer.normals_offset + subbuffer.normals_byte_size;
+        subbuffer.texcoords_byte_size = geometry->texcoords.size() * sizeof(osg::Vec2f);
+        subbuffer.texcoords = geometry->texcoords;
+
+        subbuffer.indices_offset = subbuffer.texcoords_offset + subbuffer.texcoords_byte_size;
+        subbuffer.indices_byte_size = geometry->vertices.size() * sizeof(std::uint32_t);
+        subbuffer.indices.resize(geometry->vertices.size());
+        for (std::size_t i = 0; i < geometry->vertices.size(); ++i)
+        {
+            subbuffer.indices[i] = i;
+        }
+
+        offset = subbuffer.indices_offset + subbuffer.indices_byte_size;
+
+        buffer.subbuffers.insert({geometry->unique_id, subbuffer});
+
+        buffer.size = offset;
+
+        if (auto state_set = geometry->state_set)
+        {
+            if (auto texture = state_set->texture)
+            {
+                if (auto image = texture->image)
+                {
+                    if (!images.count(image->unique_id))
+                    {
+                        images.insert({image->unique_id, {images.size(), image}});
+                    }
+                }
+
+                if (!textures.count(texture->unique_id))
+                {
+                    textures.insert({texture->unique_id, {textures.size(), texture}});
+                }
+
+                if (!materials.count(state_set->unique_id))
+                {
+                    materials.insert({state_set->unique_id, {materials.size(), state_set}});
+                }
+            }
+        }
+
+        if (!meshes.count(geometry->unique_id))
+        {
+            meshes.insert({geometry->unique_id, {meshes.size(), geometry}});
+        }
+
+        auto mesh_index = meshes[geometry->unique_id].first;
         
+        auto mesh = std::make_shared<gltf::Mesh>();
+        mesh->positions_index = mesh_index * 4;
+        mesh->normals_index = mesh_index * 4 + 1;
+        mesh->texcoords_index = mesh_index * 4 + 2;
+        mesh->indices_index = mesh_index * 4 + 3;
+
+        node->mesh = {mesh_index, mesh};
     }
 }
