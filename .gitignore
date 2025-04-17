@@ -2,3 +2,7 @@
 build/
 *.osg*
 *.gltf*
+*.png*
+*.bin*
+*.bmp*
+*.tga*
