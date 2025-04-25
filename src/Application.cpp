@@ -29,13 +29,22 @@ using std::string_literals::operator""s;
 
 void Application::read_arguments(int argc, char* argv[])
 {
-    if (argc != 3)
+    if (argc != 2 && argc != 3)
     {
-        throw std::runtime_error("Invalid number of arguments!\nValid usage:\nosg2gltf osgt_path gltf_path");
+        throw std::runtime_error("Invalid number of arguments!\nValid usage:\nosg2gltf osgt_path gltf_path\nor\nosg2gltf osgt_path");
     }
 
     osgt_path = argv[1];
-    gltf_path = argv[2];
+
+    if (argc == 2)
+    {
+        gltf_path = osgt_path.parent_path().generic_string() + '/' + osgt_path.stem().generic_string() + ".gltf";
+    }
+    else
+    {
+        gltf_path = argv[2];
+    }
+
     bin_path = gltf_path.parent_path().generic_string() + '/' + gltf_path.stem().generic_string() + ".bin";
 }
 
