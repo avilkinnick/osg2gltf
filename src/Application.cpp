@@ -13,8 +13,10 @@
 #include "osg/State_set.hpp"
 #include "osg/Texture2d.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -29,19 +31,20 @@ void Application::read_arguments(int argc, char* argv[])
 {
     if (argc != 3)
     {
-        throw std::runtime_error("Invalid number of arguments!\nValid usage:\nosg2gltf input_filename output_filename");
+        throw std::runtime_error("Invalid number of arguments!\nValid usage:\nosg2gltf osgt_path gltf_path");
     }
 
-    input_filename = argv[1];
-    output_filename = argv[2];
+    osgt_path = argv[1];
+    gltf_path = argv[2];
+    bin_path = gltf_path.parent_path().generic_string() + '/' + gltf_path.stem().generic_string() + ".bin";
 }
 
 void Application::open_input_file()
 {
-    input_file.open(input_filename);
+    input_file.open(osgt_path);
     if (!input_file)
     {
-        throw std::runtime_error("Failed to open "s + input_filename);
+        throw std::runtime_error("Failed to open "s + osgt_path.generic_string());
     }
 }
 
@@ -384,7 +387,21 @@ void Application::convert_data()
 
 void Application::write_data_to_output_files()
 {
-    std::ofstream bin_file(output_filename + ".bin", std::ios::binary);
+    scene.root_node->has_matrix = true;
+    for (int i = 0; i < 4; ++i)
+    {
+        for (int j = 0; j < 4; ++j)
+        {
+            scene.root_node->matrix[i][j] = 0.0f;
+        }
+    }
+
+    scene.root_node->matrix[3][3] = 1.0f;
+    scene.root_node->matrix[0][0] = 1.0f;
+    scene.root_node->matrix[2][1] = 1.0f;
+    scene.root_node->matrix[1][2] = -1.0f;
+
+    std::ofstream bin_file(bin_path, std::ios::binary);
     for (const auto& [osg_id, subbuffer] : buffer.subbuffers)
     {
         bin_file.write(reinterpret_cast<const char*>(subbuffer.positions.data()), subbuffer.positions_byte_size);
@@ -392,8 +409,6 @@ void Application::write_data_to_output_files()
         bin_file.write(reinterpret_cast<const char*>(subbuffer.texcoords.data()), subbuffer.texcoords_byte_size);
         bin_file.write(reinterpret_cast<const char*>(subbuffer.indices.data()), subbuffer.indices_byte_size);
     }
-
-    std::string gltf_content;
 
     gltf_content += "{\n"
         "    \"asset\": {\n"
@@ -416,7 +431,7 @@ void Application::write_data_to_output_files()
         "    \"buffers\": [\n"
         "        {\n"
         "            \"byteLength\": " + std::to_string(buffer.size) + ",\n"
-        "            \"uri\": \"" + output_filename + ".bin\"\n" 
+        "            \"uri\": \"" + bin_path.filename().generic_string() + "\"\n" 
         "        }\n"
         "    ],\n"
         "    \"bufferViews\": [\n";
@@ -503,9 +518,11 @@ void Application::write_data_to_output_files()
 
     for (const auto& [id, image] : images)
     {
+        std::string& filename = image.second->filename;
+        std::replace(filename.begin(), filename.end(), '\\', '/');
         gltf_content +=
             "        {\n"
-            "            \"uri\": \"" + image.second->filename + "\"\n"
+            "            \"uri\": \"" + filename + "\"\n"
             "        },\n";
     }
     gltf_content.pop_back();
@@ -585,7 +602,7 @@ void Application::write_data_to_output_files()
     gltf_content += "    ]\n"
         "}";
 
-    std::ofstream gltf_file(output_filename + ".gltf");
+    std::ofstream gltf_file(gltf_path);
     gltf_file << gltf_content;
 }
 

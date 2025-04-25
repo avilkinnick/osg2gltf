@@ -11,6 +11,7 @@
 #include "osg/State_set.hpp"
 #include "osg/Texture2d.hpp"
 
+#include <filesystem>
 #include <memory>
 #include <fstream>
 #include <string>
@@ -31,12 +32,15 @@ private:
     void write_node(std::string& gltf_content, std::shared_ptr<gltf::Node> node);
 
 private:
-    std::string input_filename;
-    std::string output_filename;
+    std::filesystem::path osgt_path;
+    std::filesystem::path gltf_path;
+    std::filesystem::path bin_path;
+
     std::ifstream input_file;
     std::shared_ptr<osg::Group> root;
     gltf::Scene scene;
     gltf::Buffer buffer;
+    std::string gltf_content;
     std::map<Unique_osg_id, std::pair<unsigned int, std::shared_ptr<osg::Geometry>>> meshes;
     std::map<Unique_osg_id, std::pair<unsigned int, std::shared_ptr<osg::State_set>>> materials;
     std::map<Unique_osg_id, std::pair<unsigned int, std::shared_ptr<osg::Texture2d>>> textures;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "osg/Geometry.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <map>
